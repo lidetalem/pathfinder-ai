@@ -267,8 +267,8 @@ export default function App() {
 
   return <div className="app-shell">
     <header className="topbar">
-      <button className="brand" onClick={() => setScreen(user ? 'intro' : 'welcome')} aria-label="Pathfinder home">
-        <span className="brand-mark">P</span><span>pathfinder<span className="brand-dot">.</span></span>
+      <button className="brand" onClick={() => setScreen(user ? 'intro' : 'welcome')} aria-label="Pathfinder et home">
+        <span className="brand-mark">P</span><span>Pathfinder et<span className="brand-dot">.</span></span>
       </button>
       <div className="top-actions">
         <button
@@ -453,7 +453,7 @@ export default function App() {
         <h1 className="welcome-title">Hello, <span className="gradient-text">{firstName}.</span></h1>
         <p className="welcome-subtitle">You don’t need to have it all figured out.<br/>You only need to find your next good question.</p>
         <div className="intro-card">
-          <p>Digital work is full of possibilities—and that can feel overwhelming. Pathfinder helps you explore a direction based on your interests, current strengths, resources, and the kind of work you want to do.</p>
+          <p>Digital work is full of possibilities—and that can feel overwhelming. Pathfinder et helps you explore a direction based on your interests, current strengths, resources, and the kind of work you want to do.</p>
           <div className="three-mini"><div><span>01</span><b>Tell us about you</b><small>Simple, thoughtful questions</small></div><div><span>02</span><b>Explore your fit</b><small>Clear reasons, not guesses</small></div><div><span>03</span><b>Take a first step</b><small>A practical experiment</small></div></div>
         </div>
         <button className="primary-button" onClick={()=>setScreen('choose')}>Let’s begin <span>→</span></button>
@@ -548,7 +548,7 @@ export default function App() {
           <div className="alternatives"><h3>Also worth exploring</h3>{result.alternatives?.map(a=><div className="alternative" key={a.id}><span>{a.label}</span><span>Explore ↗</span></div>)}</div>
           <p className="result-note">{result.note}</p>
           <div className="result-actions"><button className="secondary-button" onClick={()=>{setIndex(0);setScreen('quiz')}}>Review my answers</button><button className="primary-button" onClick={restart} disabled={busy}>Start again <span>↻</span></button></div>
-          <p className="closing-note">Thanks for exploring with Pathfinder. We’ll keep working to make your next step clearer—with more useful tools and features in the future.</p>
+          <p className="closing-note">Thanks for exploring with Pathfinder et. We’ll keep working to make your next step clearer—with more useful tools and features in the future.</p>
         </section>
 
         <section id="contact" className="contact-section">
@@ -600,7 +600,7 @@ export default function App() {
 
     <footer className="footer">
       <div className="footer-branding">
-        <span>© {new Date().getFullYear()} Pathfinder</span>
+        <span>© {new Date().getFullYear()} Pathfinder et</span>
         <span className="footer-tagline">Built to make digital choices feel clearer.</span>
       </div>
       <div className="footer-links">
