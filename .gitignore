@@ -1,0 +1,10 @@
+node_modules/
+dist/
+.env
+PROMPT_FOR_AI.md
+.env.*
+!.env.example
+.DS_Store
+coverage/
+README.md
+.env.example
