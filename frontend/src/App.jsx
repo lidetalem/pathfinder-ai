@@ -616,6 +616,12 @@ export default function App() {
             <span>{PROFILE_LINKS.telegramHandle || '@lidetalem'}</span>
           </a>
         )}
+        <a className="footer-pill footer-link" href="/privacy/">
+          <span>Privacy</span>
+        </a>
+        <a className="footer-pill footer-link" href="/terms/">
+          <span>Terms</span>
+        </a>
         {showContactLink && (
           <button type="button" className="footer-pill footer-contact" onClick={scrollToContact}>
             Contact

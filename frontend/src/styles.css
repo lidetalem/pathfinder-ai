@@ -500,9 +500,8 @@ textarea { min-height: 164px; resize: vertical; }
 .footer-tagline { color: var(--muted); }
 .footer-links { display:flex; align-items:center; justify-content:flex-end; gap:10px; flex-wrap:wrap; }
 .footer-pill { display:inline-flex; align-items:center; justify-content:center; gap:8px; min-height:40px; padding:0 14px; border-radius:999px; border:1px solid var(--border); background: var(--surface); color: var(--text); text-decoration:none; font-size:12px; font-weight:600; letter-spacing:0.01em; transition: transform .2s ease, border-color .2s ease, background-color .3s ease, color .2s ease, box-shadow .2s ease; box-shadow: 0 8px 18px rgba(0,0,0,0.03); }
+.footer-link { min-height: 44px; }
 .footer-pill:hover { transform: translateY(-1px); border-color: var(--accent); color: var(--accent); box-shadow: 0 10px 22px rgba(120, 101, 255, 0.08); }
-.footer-fin { display:inline-flex; align-items:center; gap:8px; }
-.footer-pill svg { width: 14px; height: 14px; }
 .footer-contact { background: transparent; }
 
 @media(max-width: 850px) {
