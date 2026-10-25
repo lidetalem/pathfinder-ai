@@ -25,6 +25,16 @@ export default function App() {
   const [result,setResult] = useState(null);
   const [busy,setBusy] = useState(false);
   const [error,setError] = useState('');
+  const [theme, setTheme] = useState(() => {
+    const stored = localStorage.getItem('pathfinder_theme');
+    if (stored === 'light' || stored === 'dark') return stored;
+    return window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+  });
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('pathfinder_theme', theme);
+  }, [theme]);
 
   useEffect(() => {
     if (!getToken()) return;
@@ -98,6 +108,27 @@ export default function App() {
         <span className="brand-mark">P</span><span>pathfinder<span className="brand-dot">.</span></span>
       </button>
       <div className="top-actions">
+        <button
+          type="button"
+          className={`theme-toggle ${theme === 'dark' ? 'is-dark' : 'is-light'}`}
+          onClick={() => setTheme((current) => current === 'dark' ? 'light' : 'dark')}
+          aria-label="Toggle light and dark mode"
+          title="Toggle theme"
+        >
+          <span className="theme-toggle-track">
+            <span className="theme-toggle-thumb">
+              {theme === 'dark' ? (
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M12 3.5a.9.9 0 0 1 .9.9v1.1a.9.9 0 1 1-1.8 0V4.4a.9.9 0 0 1 .9-.9Zm0 13.6a.9.9 0 0 1 .9.9v1.1a.9.9 0 1 1-1.8 0v-1.1a.9.9 0 0 1 .9-.9Zm7.1-4.5a.9.9 0 0 1 .9.9.9.9 0 0 1-.9.9h-1.1a.9.9 0 1 1 0-1.8h1.1Zm-13.6 0a.9.9 0 0 1 .9.9.9.9 0 0 1-.9.9H4.4a.9.9 0 1 1 0-1.8h1.1ZM17.3 6.7l.8-.8a.9.9 0 1 1 1.2 1.2l-.8.8a.9.9 0 0 1-1.2-1.2Zm-10.6 10.6l-.8.8a.9.9 0 1 1-1.2-1.2l.8-.8a.9.9 0 0 1 1.2 1.2Zm10.6 0a.9.9 0 0 1 1.2 0l.8.8a.9.9 0 0 1-1.2 1.2l-.8-.8a.9.9 0 0 1 0-1.2Zm-10.6-10.6a.9.9 0 0 1 1.2 0l.8.8a.9.9 0 1 1-1.2 1.2l-.8-.8a.9.9 0 0 1 0-1.2ZM12 7.9a4.1 4.1 0 1 1 0 8.2 4.1 4.1 0 0 1 0-8.2Z" fill="currentColor"/>
+                </svg>
+              ) : (
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M20 15.5A7.5 7.5 0 0 1 8.5 4a8.5 8.5 0 1 0 11.5 11.5Z" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              )}
+            </span>
+          </span>
+        </button>
         {user && <><span className="user-label">{user.name}</span><button className="text-button" onClick={signOut}>Sign out</button></>}
         <span className="status-dot"/><span className="small-muted">Your next chapter starts here</span>
       </div>
