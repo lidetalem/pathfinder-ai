@@ -23,6 +23,14 @@ app.use(cors({
 app.use(express.json({ limit: '100kb' }));
 app.use(rateLimit({ windowMs: 15 * 60 * 1000, limit: 150, standardHeaders: true, legacyHeaders: false }));
 
+const contactRateLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  limit: 8,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many contact messages. Please try again in an hour.' }
+});
+
 app.get('/api/health', async (_req, res) => {
   try { await pool.query('SELECT 1'); res.json({ status: 'ok', database: 'connected' }); }
   catch { res.status(503).json({ status: 'degraded', database: 'unavailable' }); }
@@ -130,6 +138,129 @@ app.post('/api/assessments/:id/restart', requireAuth, async (req,res,next) => {
     const fresh = await pool.query('INSERT INTO assessments(user_id,pathway) VALUES($1,$2) RETURNING id,pathway,status,current_question', [req.user.id,r.rows[0].pathway]);
     res.json({ assessment: fresh.rows[0] });
   } catch (err) { next(err); }
+});
+
+const emailWarningShown = { value: false };
+
+const escapeHtml = (value = '') => String(value)
+  .replace(/&/g, '&amp;')
+  .replace(/</g, '&lt;')
+  .replace(/>/g, '&gt;')
+  .replace(/"/g, '&quot;')
+  .replace(/'/g, '&#39;');
+
+const sendContactEmail = async ({ id, name, email, phone, message }) => {
+  const apiKey = process.env.RESEND_API_KEY;
+  const contactToEmail = process.env.CONTACT_TO_EMAIL;
+  if (!apiKey || !contactToEmail) return;
+
+  const safeName = String(name || '').replace(/\r|\n/g, ' ').trim();
+  const safeEmail = String(email || '').trim();
+  const safePhone = String(phone || '').trim();
+  const safeMessage = String(message || '').trim();
+  const timeStamp = new Date().toISOString();
+  const fromAddress = process.env.CONTACT_FROM_EMAIL || 'Pathfinder <onboarding@resend.dev>';
+  const subject = `New Pathfinder message from ${safeName}`;
+  const textBody = [
+    `Name: ${safeName}`,
+    `Email: ${safeEmail || 'Not provided'}`,
+    `Phone: ${safePhone || 'Not provided'}`,
+    '',
+    'Message:',
+    safeMessage,
+    '',
+    `Sent at: ${timeStamp}`
+  ].join('\n');
+  const htmlBody = `
+    <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #1f2430;">
+      <h2 style="margin-bottom: 12px;">New Pathfinder message</h2>
+      <p><strong>Name:</strong> ${escapeHtml(safeName)}</p>
+      <p><strong>Email:</strong> ${escapeHtml(safeEmail || 'Not provided')}</p>
+      <p><strong>Phone:</strong> ${escapeHtml(safePhone || 'Not provided')}</p>
+      <p><strong>Sent at:</strong> ${escapeHtml(timeStamp)}</p>
+      <p><strong>Message:</strong></p>
+      <div style="padding: 12px 14px; border-left: 4px solid #8a76f3; background: #f6f4ff; white-space: pre-wrap;">${escapeHtml(safeMessage)}</div>
+    </div>
+  `;
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 8000);
+
+  try {
+    const response = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      signal: controller.signal,
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'Idempotency-Key': `contact-${id}`,
+        ...(safeEmail ? { 'Reply-To': safeEmail } : {})
+      },
+      body: JSON.stringify({
+        from: fromAddress,
+        to: [contactToEmail],
+        reply_to: safeEmail || undefined,
+        subject,
+        text: textBody,
+        html: htmlBody
+      })
+    });
+
+    if (!response.ok) {
+      console.log(`contact email failed (${response.status})`);
+    }
+  } catch (error) {
+    console.log('contact email failed (timeout)');
+  } finally {
+    clearTimeout(timeout);
+  }
+};
+
+if (!process.env.RESEND_API_KEY || !process.env.CONTACT_TO_EMAIL) {
+  console.warn('Contact email not configured: missing RESEND_API_KEY or CONTACT_TO_EMAIL');
+}
+
+app.post('/api/contact', contactRateLimiter, async (req, res, next) => {
+  try {
+    const { name, email, phone, message, website } = req.body || {};
+    const trimmedName = String(name || '').trim();
+    const trimmedEmail = String(email || '').trim();
+    const trimmedPhone = String(phone || '').trim();
+    const trimmedMessage = String(message || '').trim();
+    const honeypot = String(website || '').trim();
+
+    if (honeypot) return res.status(200).json({ ok: true, message: 'Thanks, your message was sent.' });
+    if (trimmedName.length < 2 || trimmedName.length > 80) {
+      return res.status(400).json({ error: 'Name must be 2 to 80 characters long.' });
+    }
+    if (!trimmedEmail && !trimmedPhone) {
+      return res.status(400).json({ error: 'Please add either an email or phone number.' });
+    }
+    if (trimmedEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
+      return res.status(400).json({ error: 'Please enter a valid email address.' });
+    }
+    if (trimmedPhone && !/^[0-9+()\-\s]{7,20}$/.test(trimmedPhone)) {
+      return res.status(400).json({ error: 'Please enter a valid phone number.' });
+    }
+    if (trimmedMessage.length < 10 || trimmedMessage.length > 2000) {
+      return res.status(400).json({ error: 'Message must be 10 to 2000 characters long.' });
+    }
+
+    const result = await pool.query(
+      `INSERT INTO contact_messages (name, email, phone, message) VALUES ($1, $2, $3, $4) RETURNING id`,
+      [trimmedName, trimmedEmail || null, trimmedPhone || null, trimmedMessage]
+    );
+
+    const contactId = result.rows[0]?.id;
+    res.status(201).json({ ok: true, message: 'Thanks, your message was sent.' });
+
+    if (contactId) {
+      sendContactEmail({ id: contactId, name: trimmedName, email: trimmedEmail, phone: trimmedPhone, message: trimmedMessage }).catch(() => {});
+    }
+  } catch (err) {
+    next(err);
+  }
 });
 
 app.use((err,_req,res,_next) => {
