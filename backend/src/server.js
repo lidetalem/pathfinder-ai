@@ -10,6 +10,7 @@ import { requireAuth } from './auth.js';
 import { pathways, scoreAssessment } from './questions.js';
 
 const app = express();
+app.set('trust proxy', 1);
 const port = process.env.PORT || 4000;
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
